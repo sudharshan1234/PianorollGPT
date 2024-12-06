@@ -72,3 +72,42 @@ The notebook assumes the dataset is located at `/content/drive/Shareddrives/Proj
 - The notebook provides basic instructions for using the model. You may need to adjust parameters and code for your specific needs.
 - The dataset path and model checkpoint locations are assumed to be in the Google Drive directory specified in the notebook. You may need to modify these paths accordingly.
 - The generation process uses a temperature parameter to control the randomness of the output. Experiment with different temperature values to achieve desired results.
+
+# How to Use the Generated MIDI File
+
+After running the model and generating the predicted MIDI file, you can play it using any MIDI player or digital audio workstation (DAW) software. Follow the steps below:
+
+## 1. Locate the Generated MIDI File
+
+The generated MIDI file will be saved with the `.mid` extension, for example:
+
+- `my_song.mid`
+
+## 2. Play the MIDI File
+
+You can play the MIDI file in several ways:
+
+### Option 1: Using a Desktop MIDI Player
+
+- **Windows**: Use [Windows Media Player](https://support.microsoft.com/en-us/windows/windows-media-player) or download a free MIDI player like [VanBasco](http://www.vanbasco.com/).
+- **MacOS**: Use [QuickTime Player](https://support.apple.com/quicktime) or a third-party app like [MuseScore](https://musescore.org/).
+- **Linux**: Use a program like [VLC](https://www.videolan.org/) or [TiMidity++](https://timidity.sourceforge.io/).
+
+### Option 2: Using a Digital Audio Workstation (DAW)
+
+If you prefer to work with the MIDI in a professional music editing software, you can import the `.mid` file into a DAW like:
+
+- [Ableton Live](https://www.ableton.com/)
+- [FL Studio](https://www.image-line.com/)
+- [Logic Pro X](https://www.apple.com/logic-pro/)
+
+### Option 3: Use Online MIDI Players
+
+You can also play the MIDI file online using free services such as:
+
+- [MIDIWorld](https://www.midiworld.com/)
+- [Online Sequencer](https://onlinesequencer.net/)
+
+## 3. Enjoy the Music!
+
+Once you've opened the MIDI file in your chosen player, press play to listen to the generated composition!
