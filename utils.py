@@ -7,7 +7,7 @@ import numpy as np
 import pypianoroll
 
 
-root_dir = '/content/drive/MyDrive/682 Project'
+root_dir = '/content/drive/Shareddrives/Projects/PianorollGPT'
 data_dir = root_dir + '/Lakh Piano Dataset/lpd_17/lpd_17_cleansed'
 # Local path constants
 DATA_PATH = 'data'
@@ -86,12 +86,17 @@ def create_combined_pianorolls(train_ids, combined_pianorolls_path='rock1000_aco
 
     # Open the cleansed ids - cleansed file ids : msd ids
     cleansed_ids = pd.read_csv(os.path.join(root_dir, 'Lakh Piano Dataset', 'cleansed_ids.txt'), delimiter = '    ', header = None)
+    # print(cleansed_ids.head())
     lpd_to_msd_ids = {a:b for a, b in zip(cleansed_ids[0], cleansed_ids[1])}
     msd_to_lpd_ids = {a:b for a, b in zip(cleansed_ids[1], cleansed_ids[0])}
     
     # Generate the pianorolls
     for msd_file_name in train_ids:
-        lpd_file_name = msd_to_lpd_ids[msd_file_name]
+        lpd_file_name = msd_to_lpd_ids.get(msd_file_name, None)
+        if not lpd_file_name:
+            print(msd_file_name)
+            print("CONTINUING")
+            continue
         
         # Get the NPZ path
         npz_path = get_midi_npz_path(msd_file_name, lpd_file_name)
@@ -308,7 +313,7 @@ def detokenize_sequence(tokenized_sequences, num_time_steps, num_notes=128):
 
         # Process each token
         for token in tokens:
-            if token != "<PAD>":
+            if token and not token.startswith("<"):
                 # Extract the track label and note index from the token
                 # We are assuming that all track labels (like 'Pp', 'Pad') are distinct and without numbers,
                 # so the track label is composed of letters, and the note index is the number at the end.
@@ -322,3 +327,22 @@ def detokenize_sequence(tokenized_sequences, num_time_steps, num_notes=128):
                 detokenized_tensor[track_idx, time_step, note_idx] = max_note_values[track_idx] * (1 - track_idx / (len(reverse_track_mapping) - 1))
 
     return detokenized_tensor
+
+def create_file_paths(base_dir="Lakh Piano Dataset/labels"):
+    """
+    Creates a list of file paths within the 'labels' folder.
+
+    Args:
+        base_dir: The base directory containing the subfolders. 
+                Defaults to "Lakh Piano Dataset/labels".
+
+    Returns:
+        A list of file paths.
+    """
+
+    file_paths = []
+    for root, dirs, files in os.walk(base_dir):
+        for file in files:
+            file_path = os.path.join(root, file)
+            file_paths.append(file_path)
+    return file_paths

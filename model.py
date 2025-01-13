@@ -137,7 +137,7 @@ class GPT(nn.Module):
         return optimizer
 
     @torch.no_grad()
-    def generate(self, idx, tokenizer, max_new_tokens, temperature=1.0, top_k=None):
+    def generate(self, idx, tokenizer, max_new_tokens, genre_token="<GUITAR>", temperature=1.0, top_k=None):
         """
         Generate sequence starting from <SOT> and stopping at <EOT>.
         
@@ -150,32 +150,45 @@ class GPT(nn.Module):
         # Ensure the tokenizer has <SOT> and <EOT> token IDs
         sot_token_id = tokenizer.token_to_id['<SOT>']
         eot_token_id = tokenizer.token_to_id['<EOT>']
+        genre_token_id = tokenizer.token_to_id[genre_token]
+        beat_token_id = tokenizer.token_to_id['<beat>']
 
         # Initialize sequence with <SOT> if not already provided
         if idx is None:
-            idx = torch.tensor([[sot_token_id]], dtype=torch.long).to(next(self.parameters()).device)  # Start from <SOT>
+            idx = torch.tensor([[genre_token_id, sot_token_id]], dtype=torch.long).to(next(self.parameters()).device)  # Start from <SOT>
 
         for _ in range(max_new_tokens):
-            # If the sequence context is growing too long, crop it at block_size
-            idx_cond = idx if idx.size(1) <= self.config.block_size else idx[:, -self.config.block_size:]
+            # idx_cond = idx if idx.size(1) <= self.config.block_size else idx[:, -self.config.block_size:]
 
+            # Ensure the sequence context respects the block_size, keeping the genre token intact
+            if idx.size(1) > self.config.block_size:
+                idx_cond = torch.cat((idx[:, :1], idx[:, -(self.config.block_size - 1):]), dim=1)  # Keep genre token + latest tokens
+            else:
+                idx_cond = idx
             # Forward the model to get the logits for the last token in the sequence
             logits, _ = self(idx_cond)
             
             # Get the logits for the last predicted token and scale by temperature
-            logits = logits[:, -1, :] / temperature
+            if temperature > 0.0:
+                logits = logits[:, -1, :] / temperature
             
             # Optionally apply top-k filtering
             if top_k is not None:
                 v, _ = torch.topk(logits, min(top_k, logits.size(-1)))
                 logits[logits < v[:, [-1]]] = -float('Inf')
             
+            # # Check if the last 5 tokens are <beat>
+            if idx.size(1) >= 10 and torch.all(idx[0, -10::2] == beat_token_id):
+                logits[:, beat_token_id] = -float('Inf')  # Mask out <beat> token
+            # if idx[0, -2].item() == beat_token_id:
+            #     print("BEAT TOKEN")
+            #     logits[:, beat_token_id] = -float('Inf')
+                
             # Apply softmax to get probabilities
             probs = torch.nn.functional.softmax(logits, dim=-1)
-            
             # Sample the next token from the probability distribution
             idx_next = torch.multinomial(probs, num_samples=1)
-            
+            print(tokenizer.id_to_token[idx_next.item()])
             # Append the new token to the running sequence
             idx = torch.cat((idx, idx_next), dim=1)
             

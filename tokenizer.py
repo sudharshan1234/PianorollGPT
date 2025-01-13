@@ -1,39 +1,50 @@
 import re
+import os
+import json
+
 class PianoRollTokenizer:
-    def __init__(self, dataset_path):
-        # Define track mapping
-        track_mapping = {
-            0: 'D',    # Drums
-            1: 'P',    # Piano
-            2: 'C',    # Chromatic Percussion
-            3: 'O',    # Organ
-            4: 'G',    # Guitar
-            5: 'B',    # Bass
-            6: 'S',    # Strings
-            7: 'E',    # Ensemble
-            8: 'R',    # Brass
-            9: 'r',    # Reed
-            10: 'Pp',  # Pipe
-            11: 'L',   # Synth Lead
-            12: 'Pad', # Synth Pad
-            13: 'Fx',  # Synth Effects
-            14: 'Eth', # Ethnic
-            15: 'Per', # Percussive
-            16: 'X',   # Sound Effects
-        }
-        with open(dataset_path, 'r') as file:
-            text = file.read()
+    def __init__(self, dataset_paths):
+        self.token_to_id_path = "./tokenizer_jsons/token_to_id.json"
+        self.id_to_token_path = "./tokenizer_jsons/id_to_token.json"
+        # Check if the mappings already exist
+        if os.path.exists(self.token_to_id_path) and os.path.exists(self.id_to_token_path):
+            # Load the mappings from the JSON files
+            with open(self.token_to_id_path, 'r') as token_to_id_file:
+                self.token_to_id = json.load(token_to_id_file)
+            
+            with open(self.id_to_token_path, 'r') as id_to_token_file:
+                self.id_to_token = {int(k): v for k, v in json.load(id_to_token_file).items()}  # Convert keys back to int
 
-        # Use a regular expression to split the text but keep the leading spaces
-        tokens = re.split(r'(\s+)', text)  # This splits the text while preserving spaces
+        else:
+            text = ''
+            unique_tokens = set()
+            genre_tokens = set()
 
-        # Add your special tokens at the end
-        unique_tokens = set(tokens)
-        vocab = sorted(list(unique_tokens)+['<PAD>'])
-        # Create token-to-id mapping
-        self.token_to_id = {token: idx for idx, token in enumerate(vocab)}
-        # Create id-to-token mapping
-        self.id_to_token = {idx: token for token, idx in self.token_to_id.items()}
+            for tag, dataset_path in dataset_paths:
+                print("TAG: ", tag)
+                print("DATASET: ", dataset_path)
+                genre_tokens.add(f"<{tag}>")
+                with open(dataset_path, 'r') as file:
+                    for line_num, line in enumerate(file, start=1):
+                        # Use a regular expression to split the line but keep the leading spaces
+                        tokens = re.split(r'(\s+)', line.strip())  # Split line while preserving spaces
+                        unique_tokens.update(tokens)
+
+            # Add your special tokens at the end
+            vocab = sorted(list(unique_tokens)+['<PAD>']+list(genre_tokens))
+
+            # Create token-to-id mapping
+            self.token_to_id = {token: idx for idx, token in enumerate(vocab)}
+            # Create id-to-token mapping
+            self.id_to_token = {idx: token for token, idx in self.token_to_id.items()}
+
+            # Save token_to_id mapping
+            with open(self.token_to_id_path, 'w') as token_to_id_file:
+                json.dump(self.token_to_id, token_to_id_file, indent=4)
+
+            # Save id_to_token mapping
+            with open(self.id_to_token_path, 'w') as id_to_token_file:
+                json.dump(self.id_to_token, id_to_token_file, indent=4)
 
     def encode(self, text):
         tokens = re.split(r'(\s+)', text)  # This splits the text while preserving spaces
