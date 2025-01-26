@@ -2,6 +2,10 @@
 
 This repository contains a Google Colab notebook for training and generating music using a GPT-2 model adapted for pianoroll representations.
 
+# Sample generated songs
+
+https://pianotify.com/search?query=PianrollGPT
+
 ## Requirements
 
 - Google Colab environment
