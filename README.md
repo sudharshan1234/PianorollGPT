@@ -1,6 +1,6 @@
 # PianorollGPT
 
-This repository contains a Google Colab notebook for training and generating music using a GPT-2 model adapted for pianoroll representations.
+This repository contains a Google Colab notebook for training and generating genre specific music using a GPT-3 model with custom tokenizerwsadapted for pianoroll representations.
 
 # Sample generated songs
 
@@ -51,25 +51,54 @@ The notebook assumes the dataset is located at `/content/drive/Shareddrives/Proj
 4. **Music Generation:**
    - Load the trained model checkpoint.
    - Create a `PianoRollTokenizer` to tokenize and detokenize pianoroll sequences.
-   - Generate music using the `model.generate` function, providing a starting context and desired length.
+   - Generate music using the `model.generate` function, providing a starting context (with specific genre) and desired length.
    - Detokenize the generated output to obtain the pianoroll representation.
    - Convert the pianoroll to a Pretty MIDI object and play the generated music.
 
 ## Load the Model
 
-`model = GPT(GPTConfig()) model.load_state_dict(torch.load("model_checkpoint_step_15000.pth")) model.eval() `
+```
+model = GPT(GPTConfig()) 
+model.load_state_dict(torch.load("model_checkpoint_step_15000.pth")) 
+model.eval()
+```
 
-## Generate music
+## Prepare the tokenizer
+```
+import os
+from collections import defaultdict
 
-`context = torch.tensor([[tokenizer.token_to_id['']]], dtype=torch.long, device=device) generated_output = model.generate(context, tokenizer, max_new_tokens=2048, temperature=0.9)`
+# Directory containing the text files
+data_dir = "./txtdatasets_cleaned/"
+# Dictionary to store genre groups
+dataset_paths = []
+# Extract genres from file names and group
+for file_name in os.listdir(data_dir):
+    if file_name.endswith(".txt"):
+        # Extract genre token (e.g., "tagtraum_pop" from "dataset_tagtraum_pop.txt")
+        genre = ''.join(file_name.split('_')[-1].split(".")[0]).upper()
+        dataset_paths.append((genre, os.path.join(data_dir, file_name)))
+```
 
-## Detokenize and convert to MIDI
+```
+from tokenizer import PianoRollTokenizer
+tokenizer = PianoRollTokenizer(dataset_paths=dataset_paths)
+```
 
-`predicted_tokens = tokenizer.decode(generated_output[0].tolist()) predicted_tensor = detokenize_sequence(predicted_tokens) predicted_multitrack = pypianoroll.Multitrack(name='Original', resolution=4, tracks=tracks) predicted_pm = pypianoroll.to_pretty_midi(predicted_multitrack)`
+## generate a genre specific music
+
+```
+predicted_tensor = generate_music("<COVER>")
+```
+Use the generate_music function to create music for a specific genre. Replace `<GENRE>` with the desired genre token (e.g., `<ROCK>`, `<JAZZ>`, `<POP>`).
+From the predicted tensor, we then create a pianoroll multitrack object.
 
 ## Play the generated music
 
-`predicted_midi_audio = predicted_pm.fluidsynth() IPython.display.Audio(predicted_midi_audio, rate=44100)`
+```
+predicted_midi_audio = predicted_pm.fluidsynth()
+IPython.display.Audio(predicted_midi_audio, rate=44100)
+```
 
 ## Notes
 
@@ -90,6 +119,8 @@ The generated MIDI file will be saved with the `.mid` extension, for example:
 ## 2. Play the MIDI File
 
 You can play the MIDI file in several ways:
+
+I use [Pianotify](https://pianotify.com) to upload and view midi files.
 
 ### Option 1: Using a Desktop MIDI Player
 
